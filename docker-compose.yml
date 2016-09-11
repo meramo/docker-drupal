@@ -16,14 +16,20 @@ services:
       expose:
           - 9000
       volumes:
-          - ./code:/var/www/html
+          - .:/var/web
+      links:
+         - mysql
   mysql:
       image: mysql:latest
       expose:
           - 3306
       volumes:
           - database_data:/var/lib/mysql
-          - ./conf/mysql/conf.d:/etc/mysql/conf.d
+          - ./docker/mysql/conf.d:/etc/mysql/conf.d
+      networks:
+          default:
+              aliases:
+                  - localhost
       environment:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: drupal
