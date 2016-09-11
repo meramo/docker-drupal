@@ -15,3 +15,5 @@ RUN { \
   } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 RUN mkdir -p /var/web/docroot
+
+WORKDIR /var/web

@@ -8,29 +8,32 @@ Currently it includes:
 
 # Prerequisites
 
-1. Docker and Docker Compose installed on a host machine.
-
-2. Git installed on a host machine (although it's not needed for the environment to run).
+1. Command line access.
+2. Docker and Docker Compose installed on a host machine.
+3. Git installed on a host machine (although it's not needed for the environment to run).
 
 # Installation
 
 ### First-time project setup
 
-1. Run `./scripts/build-tools-install.sh` to install Composer and the Drupal code along with their dependencies. If 
- the script refuses to run, execute `chmod a+x ./scripts/build-tools-install.sh` first.
+1. Run `./scripts/install.sh` to install Composer and the Drupal code along with their dependencies. If 
+ the script refuses to run, execute `chmod a+x ./scripts/install.sh` first.
 
 2. From the folder root run `docker-compose-up -d`.
 
 3. Visit http://localhost:8888 in your browser.
 
-4. Install Drupal.
+4. Install Drupal. When connecting to MySQL, replace the `localhost` host name with `mysql`.
 
 # Customization
 
 tbd
 
-# Working with Docker
+# Accessing containers and managing data
 
-To login to specific container (i.e. `mysql`) use `docker-compose exec mysql bash`
+To login to specific container (i.e. `mysql`) use `docker-compose exec mysql bash`. Then you should be able to login to mysql shell 
+with `myslq -u root -pdrupal`
+
+
 
 

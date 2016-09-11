@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="drupal-template" default="build" phingVersion="2.4.11">
+
+    <import file="${project.basedir}/build.common.xml"/>
+
+    <!-- ## Main targets -->
+    <!-- ### Build project
+    Do a complete build of the project. This is the default build target. -->
+    <target name="build"
+            description="Install the site">
+        <input message="Do you really want to rebuild the whole site? *WARNING* The database will be dropped, make sure all configuration is exported." propertyName="rebuild-confirmation" validArgs="yes,no" defaultValue="no"/>
+        <if>
+            <istrue value="${rebuild-confirmation}"/>
+            <then>
+                <phingcall target="drupal:install"/>
+                <phingcall target="drupal:dev"/>
+            </then>
+            <else>
+                <fail/>
+            </else>
+        </if>
+    </target>
+
+    <!-- ### Install a Drupal site -->
+    <target name="drupal:install-initial"
+            depends="composer:install,
+            setup-phing-drush,
+            settings-init"
+            description="Installs the site"
+            unless="project.installed">
+        <tstamp />
+        <drush command="site-install" assume="yes">
+            <option name="site-name">${drupal.sitename}</option>
+            <option name="site-mail">${drupal.mail}</option>
+            <option name="account-mail">${drupal.mail}</option>
+            <option name="account-name">${drupal.admin_name}</option>
+            <option name="locale">en</option>
+            <param>${drupal.profile}</param>
+        </drush>
+
+        <!-- Setup permissions -->
+        <phingcall target="setup-dirs-permissions"/>
+
+        <!-- Set property to prevent target from being executed multiple times -->
+        <property name="project.installed" value="true"/>
+
+        <phingcall target="drupal:dev"/>
+    </target>
+
+    <!-- ### Install a Drupal site -->
+    <target name="drupal:install"
+            depends="composer:install,
+            setup-phing-drush,
+            settings-init"
+            description="Installs the site"
+            unless="project.installed">
+        <tstamp />
+        <drush command="site-install" assume="yes">
+            <option name="site-name">${drupal.sitename}</option>
+            <option name="site-mail">${drupal.mail}</option>
+            <option name="account-mail">${drupal.mail}</option>
+            <option name="account-name">${drupal.admin_name}</option>
+            <option name="locale">en</option>
+            <param>${drupal.profile}</param>
+        </drush>
+
+        <!-- Setup permissions -->
+        <phingcall target="setup-dirs-permissions"/>
+
+        <!-- Set property to prevent target from being executed multiple times -->
+        <property name="project.installed" value="true"/>
+    </target>
+
+    <!-- ### Initialize default site settings. -->
+    <target name="settings-init" depends="load-properties" description="Initialize default site settings">
+
+        <if>
+            <!-- If `build.properties` exists then assume we have a project root directory -->
+            <and>
+                <isset property="drupal.sitename" />
+                <isset property="drupal.vhost" />
+            </and>
+            <then>
+                <if>
+                    <not><available file="${project.drupal.dir}/sites/default/settings.${drupal.env}.php"/></not>
+                    <then>
+                        <copy file="${project.basedir}/templates/settings.${drupal.env}.template.php"
+                              tofile="${project.drupal.dir}/sites/default/settings.${drupal.env}.php">
+                            <filterchain>
+                                <expandproperties />
+                            </filterchain>
+                        </copy>
+                    </then>
+                </if>
+                <if>
+                    <and>
+                        <equals arg1="${drupal.env}" arg2="local-vm" />
+                        <not><available file="${project.basedir}/drupalvm/local.config.yml"/></not>
+                    </and>
+                    <then>
+                        <copy file="${project.basedir}/templates/local.config.template.yml" tofile="${project.basedir}/drupalvm/local.config.yml">
+                            <filterchain>
+                                <expandproperties />
+                            </filterchain>
+                        </copy>
+                    </then>
+                </if>
+                <if>
+                    <and>
+                        <isset property="drupal.vhost" />
+                        <not><available file="${project.drupal.dir}/sites/all/drush/drushrc.php"/></not>
+                    </and>
+                    <then>
+                        <copy file="${project.basedir}/templates/drushrc.template.php" tofile="${project.drupal.dir}/sites/all/drush/drushrc.php">
+                            <filterchain>
+                                <expandproperties />
+                            </filterchain>
+                        </copy>
+                    </then>
+                </if>
+            </then>
+            <else>
+                <fail message="ERROR: You have to create and configure build.properties file." />
+            </else>
+        </if>
+
+    </target>
+
+    <!-- ### Setup permissions -->
+    <target name="setup-dirs-permissions" depends="load-properties" description="Set file permissions after build.">
+
+        <!-- Allow write access to files directory. -->
+        <chmod mode="0777" failonerror="false">
+            <fileset dir="${project.drupal.dir}">
+                <patternset>
+                    <include name="sites/default/files"/>
+                    <include name="sites/default/files/**/*"/>
+                </patternset>
+            </fileset>
+        </chmod>
+        <chmod mode="0755" failonerror="false">
+            <fileset dir="${project.drupal.dir}">
+                <patternset>
+                    <include name="sites/default"/>
+                </patternset>
+            </fileset>
+        </chmod>
+    </target>
+
+    <!-- ### Reinstall packages from composer.json to remove all staff not defined in composer.json. -->
+    <target name="composer:install" depends="load-properties" description="Install packages from composer.json">
+
+        <if>
+            <not><available file="${project.basedir}/.bin/composer"/></not>
+            <then>
+                <fail message="You have to install build tools locally. Run _PROJECT_/scripts/build-tools-install.sh to install." />
+            </then>
+        </if>
+
+        <if>
+            <equals arg1="${drupal.env}" arg2="live" />
+            <then> <exec passthru="true" command="${project.basedir}/.bin/composer install --no-dev"/> </then>
+            <else> <exec passthru="true" command="${project.basedir}/.bin/composer install"/> </else>
+        </if>
+    </target>
+
+</project>
